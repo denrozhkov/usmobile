@@ -125,15 +125,20 @@ curl -X PUT http://localhost:8080/api/users/66beae1f3103b44d8ff99229 -H "Content
 
 ## Web deployment
 
-The app is also deployed on EC2 instance and you can make API requests to it without any setup. Sample command:
+The application is deployed and accessible via a Docker container running on an Amazon EC2 instance. This allows you to interact with the API without any local setup.
+
+You can make requests to the API using either of the following methods:
+
+   - Using cURL: Execute the following command in your terminal:
 ```
 curl -X GET 'http://18.219.218.32:8080/api/daily-usage?userId=66beae1f3103b44d8ff9922b&mdn=5996952247' -H 'Accept: application/json'
 ```
-or just type
-
+   - Via Web Browser: Simply enter the following URL in your browser's address bar:
+```
 http://18.219.218.32:8080/api/daily-usage?userId=66beae1f3103b44d8ff9922b&mdn=5996952247
+```
 
-in your browser
+Feel free to replace these with other methods/parameter values to test different scenarios
 
 ## Error Handling
 The application implements error handling and returns appropriate HTTP status codes and error messages for different scenarios.
@@ -149,16 +154,42 @@ Logging is implemented throughout the application using SLF4J. Check the console
    - Recommendation: Encrypt passwords and store them in a separate table or system, linked to the Users collection via userId. This approach will also simplify the data model, eliminating the need to filter out the password field in the model/mapper.
 
 - User Email Validation:
-   - Implement a check for existing email addresses during new user creation to prevent duplicate accounts.
+   - Implement a check for existing email addresses during new user creation to prevent duplicate accounts. 
+
+- User-MDN Relationship Management
+   - Introduce a new table to link userId and MDN, addressing scenarios such as:
+      - Users changing their phone numbers
+      - Users relinquishing numbers that are then assigned to other users
+   - Proposed table structure:
+      - userId (ObjectId, foreign key to Users collection)
+      - mdn (String)
+      - startDate (Date)
+      - endDate (Date)
+   - Develop corresponding API endpoints to manage these relationships
 
 - Daily Usage Data Management:
 
-   - Current System: Daily usage data is updated every 15 minutes, which may cause performance issues with GET requests.
-   - Proposed Solution: Separate historical and current (today's) data into two tables:
-      Create a mechanism to transfer data from the current table to the historical table.
-      Modify GET requests to combine data from both collections.
-
-   Benefits: This approach would improve query performance and data management efficiency.
+   - Current System: Daily usage data is updated every 15 minutes, which may cause performance issues with GET/POST requests.
+   - Proposed Solution for Consideration: 
+      - Separate historical and current (today's) data into two distinct collections
+      - Implement a mechanism to transfer data from the current to the historical collection
+      - Modify GET requests to query and combine data from both collections as needed
+   - Potential Benefits:
+      - Possibly improved query performance for recent data
+      - Potential for more efficient updates to current data
+      - Opportunity for targeted optimizations on each collection
+   - Considerations and Caveats:
+      - Increased system complexity and development overhead
+      - Potential challenges in maintaining data consistency during transfers
+      - Possible performance impact on queries spanning both collections
+   - Next Steps:
+      - Conduct thorough performance profiling to identify actual bottlenecks
+      - Benchmark current system against the proposed split-collection approach
+      - Explore alternative optimizations such as:
+         - Improved indexing strategies
+         - Query optimization
+         - Utilizing MongoDB's time-series collections
+      - Evaluate the trade-offs between potential performance gains and increased complexity
 
 
 Project Link: [https://github.com/denrozhkov/usmobile](https://github.com/denrozhkov/usmobile)
